@@ -1,0 +1,132 @@
+# Full study configuration. Every number in the paper comes from a run of this file
+# (or of pilot.yaml for the pilot). Change values here or with --set key=value; the
+# config actually used is saved in <run_dir>/logs/config_<stage>.yaml.
+
+experiment:
+  name: prism3d_full
+  seed: 0
+  run_dir: results/full
+
+paths:
+  data_root: data/raw
+  third_party: third_party
+
+data:
+  skip_missing_sources: false   # true only for partial runs; the paper uses all sources
+  variants: [clean, jpeg75, resize05, screenshot]
+  clean_quality: 95             # format harmonisation: every image re-encoded as JPEG 95
+  max_side: 4096                # guard against huge files; images above are downscaled (logged)
+  dedup_threshold: 8            # pHash Hamming distance for near duplicates
+  sources:
+    - {kind: generator_folders, dataset: synthbuster, root: data/raw/synthbuster, pair_by_stem: true}
+    - {kind: generator_folders, dataset: synthbuster_ext, root: data/raw/synthbuster_ext, pair_by_stem: true,
+       real_dirs: {raise: raise, real: raise, raise_1k: raise}}
+    - {kind: cospy, dataset: cospy, root: data/raw/cospy}
+    - {kind: real_folder, dataset: flickr30k, root: data/raw/flickr30k, real_source: flickr30k}
+    - {kind: openfake, dataset: openfake, root: data/raw/openfake}
+    - {kind: binary_folders, dataset: chameleon, root: data/raw/chameleon, real_source: chameleon, generator: chameleon_mixed}
+
+splits:
+  # Generators of a family that ANY base detector or the fit split was trained on.
+  # Results on these are reported separately and excluded from the headline claim.
+  seen_family_patterns:
+    - "progan"
+    - "stable-diffusion-v?1"
+    - "stable-diffusion-v?2"
+    - "sd-?1[.-]"
+    - "sd-?2[.-]"
+    - "sdxl"
+    - "stable-diffusion-xl"
+    - "ssd-1b"
+    - "lcm"
+    - "tiny-sd"
+    - "small-sd"
+    - "segmoe"
+    - "ldm"
+    - "dreamshaper|epic|realvis|juggernaut|touch-of-realism|amateur|mystic|mvc5000"
+  fit_val:
+    val_fraction: 0.2
+    max_per_cluster: 600
+    selectors:
+      - dataset: cospy
+        caption_sources: [cc3m]
+        generators: ["*ssd-1b*", "*tiny-sd*", "*small-sd*", "*segmoe*", "*lcm-lora-sdxl*", "*lcm-lora-sdv1-5*",
+                     "*sdxl-turbo*", "*ldm-text2im*", "*stable-diffusion-v1-5*", "*stable-diffusion-2-1*"]
+      - dataset: flickr30k
+  tests:
+    A_open_models:
+      max_per_cluster: 500
+      selectors:
+        - dataset: cospy
+          caption_sources: [textcaps, sbu]
+          generators: ["*flux.1-dev*", "*flux.1-schnell*", "*stable-diffusion-3-medium*", "*playground-v2.5*",
+                       "*pixart-xl-2-1024*", "*pixart-xl-2-512*"]
+        - {dataset: synthbuster_ext, label: 0}
+    B_content_matched:
+      selectors:
+        - {dataset: synthbuster}
+        - {dataset: synthbuster_ext}
+    C_newest_commercial:
+      max_per_cluster: 500
+      selectors:
+        - {dataset: openfake}
+    D_in_the_wild:
+      selectors:
+        - {dataset: chameleon}
+
+geometry:
+  work_long_side: 640
+  moge_model: Ruicheng/moge-2-vitl-normal
+  use_depth_anything: true
+  depth_anything_model: depth-anything/Depth-Anything-V2-Large-hf
+  normal_estimator: dsine            # dsine | marigold | moge
+  dsine_local_weights: null
+  marigold_model: prs-eth/marigold-normals-v1-1
+  shading_estimator: intrinsic       # intrinsic | retinex
+  normal_convention: auto            # estimated once on 50 fit images, saved to geometry_convention.json
+  convention_images: 50
+  save_maps_for: []                  # image ids whose maps are saved for the qualitative figure
+  alternative_feature_dirs: []       # e.g. [features_marigold, features_retinex] for the estimator ablation
+
+detectors:
+  use: [bfree, cospy, univfd]
+  chunk: 500
+  univfd: {repo_dir: third_party/UniversalFakeDetect}
+  bfree: {code_dir: third_party/B-Free/code, model: BFREE_dino2reg4, device: "cuda:0"}
+  cospy: {repo_dir: third_party/Co-Spy, train_dataset: sd-v1_4}
+  mock: {seed: 0, noise: 1.0}
+
+controls:
+  dino_model: facebook/dinov2-large
+  clip_model: openai/clip-vit-large-patch14
+  scene_min_conf: 0.4
+
+stacking:
+  kind: logreg
+  C_grid: [0.001, 0.01, 0.1, 1.0, 10.0]
+  cv_folds: 5
+  target_fpr: 0.05                   # operating threshold fixed on validation real images
+  models: [M1, M2, M3, M4, M5]
+
+evaluation:
+  n_boot: 2000
+  alpha: 0.05
+  practical_min_delta_auroc: 0.01
+  content_matched_split: B_content_matched
+  robustness_variants: [jpeg75, resize05, screenshot]
+  max_extra_fpr_drift: 0.01
+  min_scene_n: 200
+
+ablations:
+  run: [all]
+
+pilot:
+  enabled: false
+  alpha: 0.10
+  min_delta_auroc: 0.01
+  fpr_variant: jpeg75
+  max_extra_fpr_drift: 0.02
+  revise_m2_auroc: 0.65
+
+figures:
+  n_qualitative: 4

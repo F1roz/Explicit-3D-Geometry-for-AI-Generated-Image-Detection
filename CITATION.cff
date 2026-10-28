@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper below."
+title: "PRISM-3D: Does explicit monocular 3D geometry add to AI generated image detectors?"
+version: 0.1.0
+date-released: 2026-10-11
+authors:
+  - family-names: "[Surname]"
+    given-names: "[Given name]"
+license: MIT

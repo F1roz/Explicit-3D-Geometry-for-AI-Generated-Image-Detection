@@ -1,0 +1,48 @@
+# Pilot (methodology section 11): UnivFD base, cues G1 and G2 decide GO / REVISE / STOP.
+# All features are still computed; the pilot decision uses the pre-registered rules in
+# prism3d.experiment.pilot_decision. Sizes are small enough for a Colab T4 session.
+inherit: default.yaml
+
+experiment:
+  name: prism3d_pilot
+  run_dir: results/pilot
+
+data:
+  skip_missing_sources: true
+  variants: [clean, jpeg75]
+
+splits:
+  fit_val:
+    max_per_cluster: 100
+  tests:
+    __replace__: true
+    A_open_models:
+      max_per_cluster: 200
+      selectors:
+        - dataset: cospy
+          caption_sources: [textcaps, sbu]
+          generators: ["*flux.1-dev*", "*flux.1-schnell*", "*stable-diffusion-3-medium*"]
+        - {dataset: synthbuster_ext, label: 0}
+    B_content_matched:
+      max_per_cluster: 200
+      selectors:
+        - dataset: synthbuster
+          generators: ["*dall*", "*firefly*", "*midjourney*", "*glide*"]
+        - {dataset: synthbuster_ext, label: 0}
+
+detectors:
+  use: [univfd]
+
+stacking:
+  models: [M1, M2, M3, M4]
+
+evaluation:
+  n_boot: 1000
+  robustness_variants: [jpeg75]
+  min_scene_n: 50
+
+ablations:
+  run: [only_G1, only_G2]
+
+pilot:
+  enabled: true

@@ -1,0 +1,59 @@
+# Smoke test on synthetic renders (src/prism3d/synthetic.py) with ground-truth geometry,
+# a mock detector and mock control features. Runs on CPU in about two minutes. It checks
+# that every stage runs and that files connect; its numbers mean nothing about real images.
+inherit: default.yaml
+
+experiment:
+  name: prism3d_smoke
+  run_dir: results/smoke
+
+data:
+  variants: [clean, jpeg75, resize05]
+  sources:
+    - {kind: generator_folders, dataset: synth, root: data/synthetic, pair_by_stem: false,
+       real_dirs: {real_a: real_a, real_b: real_b, real_c: real_c}}
+
+splits:
+  seen_family_patterns: ["gen_e"]
+  fit_val:
+    val_fraction: 0.3
+    max_per_cluster: null
+    selectors:
+      - {dataset: synth, generators: [gen_a, gen_b, gen_c, gen_d, gen_e, gen_f]}
+      - {dataset: synth, real_sources: [real_a]}
+  tests:
+    __replace__: true
+    T1_open:
+      selectors:
+        - {dataset: synth, generators: [gen_g, gen_h]}
+        - {dataset: synth, real_sources: [real_b]}
+    T2_matched:
+      selectors:
+        - {dataset: synth, generators: [gen_i, gen_e_test]}
+        - {dataset: synth, real_sources: [real_b, real_c]}
+
+geometry:
+  convention_images: 10
+  save_maps_for: []
+
+detectors:
+  use: [mock]
+
+stacking:
+  cv_folds: 3
+  C_grid: [0.01, 0.1, 1.0]
+
+evaluation:
+  n_boot: 200
+  content_matched_split: T2_matched
+  robustness_variants: [jpeg75, resize05]
+  min_scene_n: 5
+
+ablations:
+  run: [drop_G1, only_G2, no_flags, gbdt, processing_aware_fit]
+
+pilot:
+  enabled: true
+
+figures:
+  n_qualitative: 3

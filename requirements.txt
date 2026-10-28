@@ -1,0 +1,22 @@
+# Core numerical stack (enough for tests, smoke test, stacking, statistics and figures)
+numpy>=1.26
+scipy>=1.11
+pandas>=2.1
+scikit-learn>=1.4
+opencv-python-headless>=4.9
+pillow>=10.0
+matplotlib>=3.8
+pyyaml>=6.0
+
+# Deep models (Colab GPU). Versions that match the official READMEs checked on 11 Oct 2026.
+torch>=2.2
+torchvision>=0.17
+transformers>=4.45      # Depth Anything V2 (HF), DINOv2, CLIP, Qwen2.5-VL
+accelerate>=0.30
+diffusers>=0.30         # Marigold normals (estimator ablation only)
+huggingface_hub>=0.24
+datasets>=2.20          # OpenFake streaming
+timm>=0.9               # used by several third-party detectors
+# Installed separately (see README):
+#   MoGe:      pip install git+https://github.com/microsoft/MoGe.git
+#   Intrinsic: pip install https://github.com/compphoto/Intrinsic/archive/main.zip
